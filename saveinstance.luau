@@ -2682,8 +2682,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 						-- end
 						local Category, Optional = Property.Category, Property.Optional
 
-						local raw = UNREADABLE_BINARY_STRINGS and ValueType == "BinaryString" and __BREAK -- TODO Improve this somehow, not ideal to check it every time
-							or ReadProperty(instance, Property, PropertyName, Special, Category, Optional)
+						local raw = ReadProperty(instance, Property, PropertyName, Special, Category, Optional)
 
 						if raw == __BREAK then -- ! Assuming __BREAK is always returned when there's a failure to read a property
 							local ok, result = pcall(gethiddenproperty_fallback, instance, PropertyName) -- * This helps in reading: Vector3int16, OptionalCoordinateFrame DataTypes. It also acts as an almost entire fallback for gethiddenproperty in case it is missing
