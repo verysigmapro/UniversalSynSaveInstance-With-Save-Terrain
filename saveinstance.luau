@@ -40,6 +40,9 @@ end
 
 getgenv().gethiddenpropertygethiddenproperty = gethiddenproperty
 
+writefile("SmoothGrid.txt", gethiddenpropertygethiddenproperty(workspace.Terrain, "SmoothGrid"))
+writefile("PhysicsGrid.txt", gethiddenpropertygethiddenproperty(workspace.Terrain, "PhysicsGrid"))
+
 local function string_find(s, pattern)
 	return string.find(s, pattern, nil, true)
 end
@@ -2441,14 +2444,8 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 
 		local itemstring = '<Item class="' .. className .. '" referent="' .. ref .. '"><Properties>'
 		if className == "Terrain" and realcheck then
-			writefile("SmoothGrid.txt", gethiddenpropertygethiddenproperty(workspace.Terrain, "SmoothGrid"))
-			task.wait()
-			writefile("PhysicsGrid.txt", gethiddenpropertygethiddenproperty(workspace.Terrain, "PhysicsGrid"))
-			task.wait(3) -- no remove?
 			local physicsgrid = to_base64(readfile("PhysicsGrid.txt"))
-			task.wait()
 			local smoothgrid = to_base64(readfile("SmoothGrid.txt"))
-		        task.wait()
 			itemstring = itemstring ..
 				'<BinaryString name="PhysicsGrid"><![CDATA[' .. physicsgrid .. ']]></BinaryString>' ..
 				'<BinaryString name="SmoothGrid"><![CDATA[' .. smoothgrid .. ']]></BinaryString>'
