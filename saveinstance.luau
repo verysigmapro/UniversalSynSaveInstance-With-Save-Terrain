@@ -43,6 +43,9 @@ getgenv().gethiddenpropertygethiddenproperty = gethiddenproperty
 writefile("SmoothGrid.txt", gethiddenpropertygethiddenproperty(workspace.Terrain, "SmoothGrid"))
 writefile("PhysicsGrid.txt", gethiddenpropertygethiddenproperty(workspace.Terrain, "PhysicsGrid"))
 
+getfenv().physicsgrid = to_base64(readfile("PhysicsGrid.txt"))
+getfenv().smoothgrid = to_base64(readfile("SmoothGrid.txt"))
+
 local function string_find(s, pattern)
 	return string.find(s, pattern, nil, true)
 end
@@ -2481,11 +2484,9 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		--return '<Item class="' .. className .. '" referent="' .. GetRef(instance) .. '"><Properties>' -- TODO: Ideally this shouldn't return <Properties> as well as the line below to close it IF  IgnorePropertiesOfNotScriptsOnScriptsMode is Enabled OR If all properties are default (reduces file size by at least 1.4%)
 		local itemstring = '<Item class="' .. className .. '" referent="' .. GetRef(instance) .. '"><Properties>'
 		if className == "Terrain" and realcheck then
-			local physicsgrid = to_base64(readfile("PhysicsGrid.txt"))
-			local smoothgrid = to_base64(readfile("SmoothGrid.txt"))
 			itemstring = itemstring ..
-				'<BinaryString name="PhysicsGrid"><![CDATA[' .. physicsgrid .. ']]></BinaryString>' ..
-				'<BinaryString name="SmoothGrid"><![CDATA[' .. smoothgrid .. ']]></BinaryString>'
+				'<BinaryString name="PhysicsGrid"><![CDATA[' .. getfenv().physicsgrid .. ']]></BinaryString>' ..
+				'<BinaryString name="SmoothGrid"><![CDATA[' .. getfenv().smoothgrid .. ']]></BinaryString>'
 		end
 		return itemstring
 	end
