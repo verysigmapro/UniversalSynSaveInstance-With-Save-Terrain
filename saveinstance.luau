@@ -54,13 +54,13 @@ local function ArrayToDict(t, hydridMode, valueOverride, typeStrict)
 	local tmp = {}
 
 	if hydridMode then
-		for some1, some2 in t do
-			if type(some1) == "number" then
-				tmp[some2] = valueOverride or true
-			elseif type(some2) == "table" then
-				tmp[some1] = ArrayToDict(some2, hydridMode) -- Some1 is Class, Some2 is Name
+		for any1, any2 in t do
+			if type(any1) == "number" then
+				tmp[any2] = valueOverride or true
+			elseif type(any2) == "table" then
+				tmp[any1] = ArrayToDict(any2, hydridMode) -- any1 is Class, any2 is Name
 			else
-				tmp[some1] = some2
+				tmp[any1] = any2
 			end
 		end
 	else
@@ -730,7 +730,7 @@ XML_Descriptors = {
 	__ENUM = function(raw)
 		return raw.Value, "token"
 	end,
-	__EXTREME = function(raw)
+	__NORMALIZE_NUMBER = function(raw)
 		if raw ~= raw then
 			return "NAN"
 		elseif raw == math.huge then
@@ -741,7 +741,7 @@ XML_Descriptors = {
 
 		return raw
 	end,
-	__EXTREME_RANGE = function(raw)
+	__NORMALIZE_RANGE = function(raw)
 		return raw ~= raw and "0" or raw -- Normally we should return "-nan(ind)" instead of "0" but this adds more compatibility
 	end,
 	__MINMAX = function(min, max, descriptor)
@@ -753,14 +753,14 @@ XML_Descriptors = {
 	__SEQUENCE = function(raw, valueFormatter)
 		-- The value is the text content, formatted as a space-separated list of floating point numbers.
 		-- tostring(raw) also works (but way slower rn)
-		local __EXTREME_RANGE = XML_Descriptors.__EXTREME_RANGE
+		local __NORMALIZE_RANGE = XML_Descriptors.__NORMALIZE_RANGE
 
 		local sequence = ""
 
 		for _, keypoint in raw.Keypoints do
 			local Value = keypoint.Value
 
-			sequence ..= keypoint.Time .. " " .. (valueFormatter and valueFormatter(Value) or __EXTREME_RANGE(Value) .. " " .. __EXTREME_RANGE(
+			sequence ..= keypoint.Time .. " " .. (valueFormatter and valueFormatter(Value) or __NORMALIZE_RANGE(Value) .. " " .. __NORMALIZE_RANGE(
 				keypoint.Envelope
 				) .. " ") -- ? Trailing whitespace is only needed for lune compatibility
 		end
@@ -844,13 +844,13 @@ XML_Descriptors = {
 		-- The value is the text content, formatted as a space-separated list of FLOATing point numbers.
 
 		return XML_Descriptors.__SEQUENCE(raw, function(color3)
-			local __EXTREME_RANGE = XML_Descriptors.__EXTREME_RANGE
+			local __NORMALIZE_RANGE = XML_Descriptors.__NORMALIZE_RANGE
 
-			return __EXTREME_RANGE(color3.R)
+			return __NORMALIZE_RANGE(color3.R)
 				.. " "
-				.. __EXTREME_RANGE(color3.G)
+				.. __NORMALIZE_RANGE(color3.G)
 				.. " "
-				.. __EXTREME_RANGE(color3.B)
+				.. __NORMALIZE_RANGE(color3.B)
 				.. " 0 "
 		end)
 	end,
@@ -867,7 +867,7 @@ XML_Descriptors = {
 	CoordinateFrame = function(raw)
 		return "<CFrame>" .. XML_Descriptors.CFrame(raw) .. "</CFrame>"
 	end,
-	-- DateTime = function(raw) return raw.UnixTimestampMillis end, -- TODO
+	-- DateTime = function(raw) return raw.UnixTimestampMillis end, -- ? Not sure
 	Faces = function(raw)
 		-- The text of this element is formatted as an integer between 0 and 63
 		return "<faces>" .. __BIT(raw.Right, raw.Top, raw.Back, raw.Left, raw.Bottom, raw.Front) .. "</faces>"
@@ -907,14 +907,14 @@ XML_Descriptors = {
 		end,
 	NumberRange = function(raw) -- tostring(raw) also works
 		-- The value is the text content, formatted as a space-separated list of floating point numbers.
-		local __EXTREME_RANGE = XML_Descriptors.__EXTREME_RANGE
+		local __NORMALIZE_RANGE = XML_Descriptors.__NORMALIZE_RANGE
 
-		return __EXTREME_RANGE(raw.Min) .. " " .. __EXTREME_RANGE(raw.Max) --[[.. " "]] -- ! This might be required for compatibility; __EXTREME_RANGE is not needed here but it fixes the issue where "nan 10" value would reset to "0 0"
+		return __NORMALIZE_RANGE(raw.Min) .. " " .. __NORMALIZE_RANGE(raw.Max) --[[.. " "]] -- ! This might be required for compatibility; __NORMALIZE_RANGE is not needed here but it fixes the issue where "nan 10" value would reset to "0 0"
 	end,
 	NumberSequence = nil,
 	-- NumberSequence = Descriptors.__SEQUENCE,
 
-	-- Path2DControlPoint = function(raw) -- Not sure
+	-- Path2DControlPoint = function(raw)  -- ? Not sure
 	-- 	local udim2 = XML_Descriptors.UDim2
 	-- 	return "<Position>"
 	-- 		.. udim2(raw.Position)
@@ -980,7 +980,25 @@ XML_Descriptors = {
 		return Identifier
 	end,
 	SecurityCapabilities = nil,
-	-- SystemAddress = function(raw) return raw end, -- PeerId?
+	-- SystemAddress = function(raw) return raw end, -- PeerId?  -- ? Not sure
+	-- TweenInfo = function(raw) -- ? Not sure
+	-- 	local normalize_num = XML_Descriptors.__NORMALIZE_NUMBER
+	-- 	local enum = XML_Descriptors.__ENUM
+
+	-- 	return "<Time>"
+	-- 		.. normalize_num(raw.Time)
+	-- 		.. "</Time><DelayTime>"
+	-- 		.. normalize_num(raw.DelayTime)
+	-- 		.. "</DelayTime><RepeatCount>"
+	-- 		.. normalize_num(raw.RepeatCount)
+	-- 		.. "</RepeatCount><Reverses>"
+	-- 		.. XML_Descriptors.bool(raw.Reverses)
+	-- 		.. "</Reverses><EasingDirection>"
+	-- 		.. enum(raw.EasingDirection)
+	-- 		.. "</EasingDirection><EasingStyle>"
+	-- 		.. enum(raw.EasingStyle)
+	-- 		.. "</EasingStyle>"
+	-- end,
 	UDim = function(raw)
 		--[[
 			S: Represents the Scale component. Interpreted as a <float>.
@@ -1010,7 +1028,7 @@ XML_Descriptors = {
 			.. "</YO>"
 	end,
 
-	-- UniqueId = function(raw)
+	-- UniqueId = function(raw) -- ? Not sure  -- ? No idea if this even needs a Descriptor
 	-- 	--[[
 	-- 		UniqueId properties might be random everytime Studio saves a place file
 	-- 		and don't have a use right now outside of packages, which SSI doesn't
@@ -1018,7 +1036,7 @@ XML_Descriptors = {
 	-- 		them until we have to.
 	-- 	]]
 	-- 	-- https://github.com/MaximumADHD/Roblox-Client-Tracker/blob/roblox/LuaPackages/Packages/_Index/ApolloClientTesting/ApolloClientTesting/utilities/common/makeUniqueId.lua#L62
-	-- 	return "" -- ? No idea if this even needs a Descriptor
+	-- 	return ""
 	-- end,
 
 	Vector2 = function(raw)
@@ -1056,10 +1074,10 @@ XML_Descriptors = {
 	--------------------------------------------------------------
 	-----------%localappdata%/Roblox/GlobalSettings_13.xml--------
 	--------------------------------------------------------------
-	-- QDir = function(raw)
+	-- QDir = function(raw) -- ? Not sure
 	-- 	return raw
 	-- end,
-	-- QFont = function(raw)
+	-- QFont = function(raw) -- ? Not sure
 	-- 	return raw
 	-- end,
 }
@@ -1133,10 +1151,10 @@ for descriptorName, redirectName in
 		NumberSequence = "__SEQUENCE",
 		Vector2int16 = "Vector2",
 		Vector3int16 = "Vector3",
-		double = "__EXTREME",
-		float = "__EXTREME",
-		int = "__EXTREME",
-		int64 = "__EXTREME",
+		double = "__NORMALIZE_NUMBER",
+		float = "__NORMALIZE_NUMBER",
+		int = "__NORMALIZE_NUMBER",
+		int64 = "__NORMALIZE_NUMBER",
 	}
 do
 	XML_Descriptors[descriptorName] = XML_Descriptors[redirectName]
@@ -1641,7 +1659,7 @@ local GLOBAL_ENV = getgenv and getgenv() or _G or shared
 --- @field AntiIdle boolean -- Prevents the 20-minute-Idle Kick. ___Default:___ true
 --- Anonymous {boolean|table{UserId = string, Name = string}} -- * **RISKY:** Cleans the file of any info related to your account like: Name, UserId. This is useful for some games that might store that info in GUIs or other Instances. Might potentially mess up parts of strings that contain characters that match your Name or parts of numbers that match your UserId. Can also be a table with UserId & Name keys. ___Default:___ false
 --- @field ShowStatus boolean -- ___Default:___ true
---- @field Callback boolean -- If set, the serialized data will be sent to the callback function instead of to file. ___Default:___ nil
+--- @field Callback function -- If set, the serialized data will be sent to the callback function instead of to file. ___Default:___ false
 --- @field mode string -- Valid modes: full, optimized, scripts. Change this to invalid mode like "invalid" if you only want ExtraInstances. "optimized" mode is **NOT** supported with *@Object* option. ___Default:___ `"optimized"`
 --- @field noscripts boolean -- ___Aliases:___ `Decompile`. ___Default:___ false
 --- @field scriptcache boolean -- ___Default:___ true
@@ -1738,7 +1756,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		__DEBUG_MODE = false,
 
 		-- Binary = false, -- true in syn newer versions (false in our case because no binary support yet), Description: Saves everything in Binary Mode (rbxl/rbxm).
-		Callback = nil,
+		Callback = false,
 		--Clipboard/CopyToClipboard = false, -- Description: If set to true, the serialized data will be set to the clipboard, which can be later pasted into studio easily. Useful for saving models.
 		-- MaxThreads = 3 -- Description: The number of decompilation threads that can run at once. More threads means it can decompile for scripts at a time.
 		-- DisableCompression = false, --Description: Disables compression in the binary output
@@ -3173,7 +3191,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 
 			local Callback = OPTIONS.Callback
 			if Callback then
-				local totalstr = ""
+				local totalstr = header
 				for _, chunk in chunks do
 					totalstr ..= chunk.str
 				end
