@@ -3,6 +3,12 @@
 --!divine-intellect
 -- https://discord.gg/wx4ThpAsmw
 
+if not gethiddenproperty then
+	gethiddenproperty = function()
+		return error("wtf is this executor lol")
+	end
+end
+
 local realcheck = true
 local imagonnaaddmorecheck, _ = pcall(function()
 	gethiddenproperty(workspace.Terrain, "SmoothGrid")
