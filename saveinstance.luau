@@ -41,7 +41,7 @@ local function to_base64(data)
 	return table.concat(result) .. padding
 end
 
-if gethiddenproperty then
+if gethiddenproperty and realcheck then
 	getgenv().gethiddenpropertygethiddenproperty = gethiddenproperty
 
 	writefile("SmoothGrid.txt", gethiddenpropertygethiddenproperty(workspace.Terrain, "SmoothGrid"))
