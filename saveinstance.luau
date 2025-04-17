@@ -5,7 +5,7 @@
 
 local realcheck = true
 local imagonnaaddmorecheck, _ = pcall(function()
-	gethiddenproperty(workspace.Terrain, "smoothgrid")
+	gethiddenproperty(workspace.Terrain, "SmoothGrid")
 end)
 
 if not imagonnaaddmorecheck then
