@@ -51,9 +51,6 @@ if gethiddenproperty then
 	getfenv().smoothgrid = to_base64(readfile("SmoothGrid.txt"))
 end
 
-getfenv().physicsgrid = to_base64(readfile("PhysicsGrid.txt"))
-getfenv().smoothgrid = to_base64(readfile("SmoothGrid.txt"))
-
 local function string_find(s, pattern)
 	return string.find(s, pattern, nil, true)
 end
