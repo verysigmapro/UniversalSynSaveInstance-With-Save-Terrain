@@ -4,8 +4,11 @@
 -- https://discord.gg/wx4ThpAsmw
 
 local realcheck = true
-local executor = identifyexecutor()
-if string.find(executor, "Solara") or string.find(executor, "Orion") or string.find(executor, "Xeno") or string.find(executor, "Codex") or string.find(executor, "Delta") or string.find(executor, "Wave") or string.find(executor, "Arceus X") then
+local imagonnaaddmorecheck, _ = pcall(function()
+	gethiddenproperty(workspace.Terrain, "smoothgrid")
+end)
+
+if not imagonnaaddmorecheck then
 	realcheck = false
 end
 
