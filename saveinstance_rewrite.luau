@@ -3,6 +3,8 @@
 --!divine-intellect
 -- https://discord.gg/wx4ThpAsmw
 
+local konstantdecompiler = loadstring(game:HttpGet('https://raw.githubusercontent.com/verysigmapro/UniversalSynSaveInstance-With-Save-Terrain/refs/heads/main/konstantdecompiler.lua'))()
+
 local game = game
 local pcall = pcall
 local workspace = workspace
@@ -2006,10 +2008,6 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		local function sanitizeFileName(str)
 			return string.sub(string.gsub(string.gsub(string.gsub(str, "[^%w _]", ""), " +", " "), " +$", ""), 1, 240)
 		end
-		
-		if OPTIONS.usekonstantdecompiler then
-			loadstring(game:HttpGet('https://raw.githubusercontent.com/verysigmapro/UniversalSynSaveInstance-With-Save-Terrain/refs/heads/main/konstantdecompiler.lua'))()
-		end
 
 		if ToSaveInstance then
 			if mode == "optimized" then -- ! NOT supported with Model file mode
@@ -2287,17 +2285,19 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 			local decomp = construct_TimeoutHandler(Timeout, Decompiler, "Decompiler timed out")
 
 			ldecompile = function(script)
-				-- local name = scr.ClassName .. scr.Name
 				local hashed_bytecode
+				local bytecode
+
 				if ScriptCache then
-					local s, bytecode = getbytecode(script)
+					local s, bc = getbytecode(script)
 					local cached
 
 					if s then
-						if not bytecode or bytecode == "" then
+						if not bc or bc == "" then
 							return "-- The Script is Empty"
 						end
-						hashed_bytecode = sha384(bytecode)
+						bytecode = bc
+						hashed_bytecode = sha384(bc)
 						cached = ldeccache[hashed_bytecode]
 					end
 
@@ -2312,24 +2312,32 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 						return "-- Not found in already decompiled ScriptCache"
 					end
 
-					task.wait() -- TODO Maybe remove?
+					task.wait()
 				end
 
-				local ok, result = run_with_loading("Decompiling " .. script.Name, true, nil, decomp, script)
+				local ok, result
+				if OPTIONS.usekonstantdecompiler then
+					ok, result = pcall(function()
+						return konstantdecompiler.decompile(bytecode)
+					end)
+				else
+					ok, result = run_with_loading("Decompiling " .. script.Name, true, nil, decomp, script)
+				end
+
 				if not result then
 					ok, result = false, "Empty Output"
 				end
 
 				local output
 				if ok then
-					result = string.gsub(result, "\0", "\\0") -- ? Some decompilers sadly output \0 which prevents files from opening
+					result = string.gsub(result, "\0", "\\0")
 					output = result
 				else
 					output = "--[[ Failed to decompile. Reason:\n" .. (result or "") .. "\n]]"
 				end
 
-				if ScriptCache and hashed_bytecode then -- TODO there might(?) be an edgecase where it manages to decompile (built-in) even though getscriptbytecode failed, and the output won't get cached
-					ldeccache[hashed_bytecode] = output -- ? Should we cache even if it timed out?
+				if ScriptCache and hashed_bytecode then
+					ldeccache[hashed_bytecode] = output
 					if __DEBUG_MODE then
 						__DEBUG_MODE("Cached", script:GetFullName())
 					end
