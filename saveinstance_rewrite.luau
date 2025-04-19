@@ -2837,7 +2837,11 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 											then
 												value = "-- [FilteringEnabled] Server Scripts are IMPOSSIBLE to save" -- TODO: Could be not just server scripts in the future
 											else
-												value = ldecompile(instance)
+												if OPTIONS.usekonstantdecompiler then
+													value = konstantdecompiler.decompile(instance)
+												else
+													value = ldecompile(instance)
+												end
 												if SaveBytecode then
 													local output = SaveBytecode(instance)
 													if output then
