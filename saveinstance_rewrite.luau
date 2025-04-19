@@ -2994,7 +2994,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 				"README",
 				nil,
 				"Script",
-				"--[[\n"
+				"script:Destroy()\n--[[\n"
 					.. (#RecoveredScripts ~= 0 and "\t\tIMPORTANT: Original Source of these Scripts was Recovered: " .. service.HttpService:JSONEncode(
 						RecoveredScripts
 						) .. "\n" or "")
