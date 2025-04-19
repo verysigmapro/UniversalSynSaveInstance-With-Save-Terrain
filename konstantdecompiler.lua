@@ -14976,4 +14976,23 @@ local function v4318(v1125, v1126)
 			return l_prefix_error_0 .. ": After: " .. v4343;
 		end;
 	end;
-	getgenv().decompile = v4328
+	return {
+		decompile = v4328, 
+		disassemble = function(v4345)
+			v16 = "vanilla";
+			local v4346 = v4344(v4345);
+			local l_v551_2 = v551;
+			v16 = "mul227";
+			local v4348 = v4344(v4345);
+			local l_v551_3 = v551;
+			if l_v551_3 < l_v551_2 then
+				return v4348;
+			elseif l_v551_2 < l_v551_3 then
+				return v4346;
+			elseif #v4348 >= #v4346 then
+				return v4348;
+			else
+				return v4346;
+			end;
+		end
+	};
