@@ -2002,7 +2002,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		local PlaceName = game.PlaceId
 
 		pcall(function()
-			PlaceName ..= " " .. service.MarketplaceService:GetProductInfo(PlaceName).Name
+			PlaceName ..= " " .. service.MarketplaceService:GetProductInfo(PlaceName).Name .. "_" .. os.date("%m_%d_%Y_%I_%M%p"):lower()
 		end)
 
 		local function sanitizeFileName(str)
