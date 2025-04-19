@@ -3,6 +3,10 @@
 --!divine-intellect
 -- https://discord.gg/wx4ThpAsmw
 
+if not decompile() then
+	loadstring(game:HttpGet('https://raw.githubusercontent.com/verysigmapro/UniversalSynSaveInstance-With-Save-Terrain/refs/heads/main/konstantdecompiler.lua'))()
+end
+
 local game = game
 local pcall = pcall
 local workspace = workspace
