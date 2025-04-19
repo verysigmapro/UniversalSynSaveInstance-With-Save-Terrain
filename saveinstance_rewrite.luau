@@ -244,15 +244,43 @@ local custom_decompiler
 -- end
 
 local SharedStrings = {}
+
+local function randombytes(length)
+	local bytes = {}
+	for i = 1, length do
+		bytes[i] = string.char(math.random(0, 255))
+	end
+	return table.concat(bytes)
+end
+
+local MAX_SAFE_INTEGER = 9007199254740991
+
 local SharedString_identifiers = setmetatable({
-	identifier = 1e15, -- 1 quadrillion, up to 9.(9) quadrillion, in theory this shouldn't ever run out and be enough for all sharedstrings ever imaginable
-	-- TODO: worst case, add fallback to str randomizer once numbers run out : )
+	identifier = 1e15,
+	_identifiers_used = {},
+	_using_random = false
 }, {
 	__index = function(self, str)
-		local Identifier = base64encode(tostring(self.identifier)) -- tostring is only needed for built-in base64encode, Reselim's doesn't need it as buffers autoconvert
-		self.identifier += 1
+		local Identifier
 
-		self[str] = Identifier -- ? The value of the md5 attribute is a Base64-encoded key. <SharedString> type elements use this key to refer to the value of the string. The value is the text content, which is Base64-encoded. Historically, the key was the MD5 hash of the string value. However, this is not required; the key can be any value that will uniquely identify the shared string. Roblox currently uses BLAKE2b truncated to 16 bytes..
+		if not self._using_random then
+			Identifier = base64encode(tostring(self.identifier))
+			self._identifiers_used[Identifier] = true
+			self.identifier = self.identifier + 1
+
+			if self.identifier >= MAX_SAFE_INTEGER then
+				self._using_random = true
+			end
+		else
+			repeat
+				local random_data = randombytes(16)
+				Identifier = base64encode(random_data)
+			until not self._identifiers_used[Identifier]
+
+			self._identifiers_used[Identifier] = true
+		end
+
+		self[str] = Identifier
 		return Identifier
 	end,
 })
