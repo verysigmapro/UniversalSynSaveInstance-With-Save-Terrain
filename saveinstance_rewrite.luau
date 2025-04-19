@@ -3,10 +3,6 @@
 --!divine-intellect
 -- https://discord.gg/wx4ThpAsmw
 
-if not decompile then
-	loadstring(game:HttpGet('https://raw.githubusercontent.com/verysigmapro/UniversalSynSaveInstance-With-Save-Terrain/refs/heads/main/konstantdecompiler.lua'))()
-end
-
 local game = game
 local pcall = pcall
 local workspace = workspace
@@ -1701,6 +1697,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 	local StatusText
 
 	local OPTIONS = {
+		usekonstantdecompiler = false,
 		mode = "optimized",
 		noscripts = false,
 		scriptcache = true,
@@ -2008,6 +2005,10 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 
 		local function sanitizeFileName(str)
 			return string.sub(string.gsub(string.gsub(string.gsub(str, "[^%w _]", ""), " +", " "), " +$", ""), 1, 240)
+		end
+		
+		if OPTIONS.usekonstantdecompiler then
+			loadstring(game:HttpGet('https://raw.githubusercontent.com/verysigmapro/UniversalSynSaveInstance-With-Save-Terrain/refs/heads/main/konstantdecompiler.lua'))()
 		end
 
 		if ToSaveInstance then
