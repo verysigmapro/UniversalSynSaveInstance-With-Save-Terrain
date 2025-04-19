@@ -13,7 +13,7 @@ synsaveinstance(SaveinstanceOptions);
 
 ```lua
 local synsaveinstance = loadstring(game:HttpGet("https://raw.githubusercontent.com/verysigmapro/UniversalSynSaveInstance-With-Save-Terrain/refs/heads/main/saveinstance_rewrite.luau", true), "saveinstance")();
-local SaveinstanceOptions = {usekonstantdecompiler=false} set to true if u dont have a decompiler
+local SaveinstanceOptions = {usekonstantdecompiler=false} --set to true if u dont have a decompiler
 synsaveinstance(SaveinstanceOptions);
 ```
 
