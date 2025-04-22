@@ -1,3 +1,5 @@
+-- broken dont use this
+
 -- Saved by UniversalSynSaveInstance https://discord.gg/wx4ThpAsmw
 
 local selectFunction = select;
