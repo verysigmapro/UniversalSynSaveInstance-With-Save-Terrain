@@ -1773,7 +1773,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		IgnoreDefaultProperties = true,
 		IgnoreNotArchivable = true,
 		IgnorePropertiesOfNotScriptsOnScriptsMode = false,
-		IgnoreSpecialProperties = not pcall(function() return gethiddenproperty(workspace.Terrain, "SmoothGrid") end)
+		IgnoreSpecialProperties = not pcall(function() return gethiddenproperty(workspace.Terrain, "SmoothGrid") end),
 
 		IsolateLocalPlayer = false, --  #service.StarterGui:GetChildren() == 0
 		IsolateLocalPlayerCharacter = false,
