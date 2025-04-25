@@ -185,7 +185,7 @@ do -- * Load Region of Déjà Vu
 		local reselim_base64encode
 		pcall(function()
 			local b64_enc_buf = loadstring(
-				game:HttpGet("https://raw.githubusercontent.com/Reselim/Base64/master/Base64.lua", true),
+				game:HttpGet("https://raw.githubusercontent.com/verysigmapro/UniversalSynSaveInstance-With-Save-Terrain/refs/heads/main/ReselimBase64.lua", true),
 				"Base64"
 			)().encode
 			reselim_base64encode = function(raw)
