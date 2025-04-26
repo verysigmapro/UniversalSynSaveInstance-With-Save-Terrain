@@ -3402,6 +3402,18 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		local anti_idle
 		if OPTIONS.AntiIdle then
 			task.spawn(function()
+				local Idled = GetLocalPlayer().Idled
+				if getconnections then
+					for _, c in getconnections(Idled) do
+						if not pcall(function()
+								c:Disable()
+							end) then
+							pcall(function()
+								c:Disconnect()
+							end)
+						end
+					end
+				end
 				anti_idle = GetLocalPlayer().Idled:Connect(function()
 					service.VirtualInputManager:SendMouseWheelEvent(
 						service.UserInputService:GetMouseLocation().X,
