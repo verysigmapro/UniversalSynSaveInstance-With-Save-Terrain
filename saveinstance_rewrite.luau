@@ -1038,18 +1038,10 @@ XML_Descriptors = {
 	bool = function(raw)
 		return raw and "true" or "false"
 	end,
-	double = function(raw)
-		return tostring(raw)
-	end,
-	float = function(raw)
-		return tostring(raw)
-	end,
-	int = function(raw)
-		return tostring(math.floor(raw))
-	end,
-	int64 = function(raw)
-		return tostring(raw)
-	end,
+	double = nil, -- Float64
+	float = nil, -- Float32
+	int = nil, -- Int32
+	int64 = nil, -- Int64 (long)
 	string = function(raw)
 		return (raw == nil or raw == "") and ""
 			or string_find(raw, "]]>") and string.gsub(raw, ESCAPES_PATTERN, ESCAPES)
