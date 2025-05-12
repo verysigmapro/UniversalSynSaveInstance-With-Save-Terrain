@@ -287,40 +287,16 @@ local SharedString_identifiers = setmetatable({
 
 local inherited_properties = {}
 local default_instances = {}
-local referents: { [Instance]: string } = {}
+local referents, ref_size = {}, 0
 
-local function tohex(bytes: { number }): string
-	local hex = table.create(32)
-	for i, byte in ipairs(bytes) do
-		local s = ("%02X"):format(byte)
-		hex[2 * i - 1] = s:sub(1, 1)
-		hex[2 * i] = s:sub(2, 2)
+local function GetRef(instance)
+	local ref = referents[instance]
+	if not ref then
+		ref = ref_size
+		referents[instance] = ref
+		ref_size += 1
 	end
-	return table.concat(hex)
-end
-
-local function hash128(str: string): { number }
-	local hash = 0
-	local bytes = table.create(16, 0)
-	for i = 1, #str do
-		local b = str:byte(i)
-		local index = (i - 1) % 16 + 1
-		bytes[index] = (bytes[index] + b * (i % 7 + 1)) % 256
-	end
-	return bytes
-end
-
-local function GenerateRobloxReferent(instance: Instance): string
-	local path = instance:GetFullName()
-	local bytes = hash128(path)
-	return "RBX" .. tohex(bytes)
-end
-
-local function GetRef(instance: Instance): string
-	if not referents[instance] then
-		referents[instance] = GenerateRobloxReferent(instance)
-	end
-	return referents[instance]
+	return ref
 end
 
 local function __BIT(...) -- * Credits to Friend (you know yourself)
