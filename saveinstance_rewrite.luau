@@ -3370,6 +3370,12 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		local SafeMode = OPTIONS.SafeMode
 		if SafeMode then
 			task.spawn(function()
+				for i, v in ipairs(game:GetDescendants()) do
+					if v:IsA("Script") or v:IsA("LocalScript") then
+						v.Enabled = false
+					end
+				end
+
 				local LocalPlayer = GetLocalPlayer()
 
 				local PlayerScripts = LocalPlayer:FindFirstChild("PlayerScripts")
