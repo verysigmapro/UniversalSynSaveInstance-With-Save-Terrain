@@ -12,247 +12,254 @@
 --!optimize 2
 --!native
 
+local b_create = buffer.create
+local b_len = buffer.len
+local b_readu8 = buffer.readu8
+local b_readu16 = buffer.readu16
+local b_readu32 = buffer.readu32
+local b_writeu8 = buffer.writeu8
+local b_writeu16 = buffer.writeu16
+local b_writeu32 = buffer.writeu32
+
 local PADDING_CHARACTER = 61
-local ALPHABET_BYTES = buffer.create(64) do
-	local Characters = {
-		65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
-		81, 82, 83, 84, 85, 86, 87, 88, 89, 90,
-		97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112,
-		113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
-		48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-		43, 47 
+
+local ALPHABET_BYTES = b_create(64)
+do
+	local Ch = {
+		65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,
+		81,82,83,84,85,86,87,88,89,90,
+		97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,
+		113,114,115,116,117,118,119,120,121,122,
+		48,49,50,51,52,53,54,55,56,57,
+		43,47
 	}
-
-	for Index = 1, 64 do
-		buffer.writeu8(ALPHABET_BYTES, Index - 1, Characters[Index])
+	for i=1,64 do
+		b_writeu8(ALPHABET_BYTES, i-1, Ch[i])
 	end
 end
 
-local ENCODE_A, ENCODE_B = buffer.create(131072), buffer.create(131072) do
-	for Byte0 = 0, 255 do
-		local Sextet0 = Byte0 // 4
-		local Sextet0Char = buffer.readu8(ALPHABET_BYTES, Sextet0)
-		local Byte0Low = Byte0 % 4
-		for Byte1 = 0, 255 do
-			local Sextet1 = Byte0Low * 16 + (Byte1 // 16)
-			local Index = (Byte0 + Byte1 * 256) * 2
-			buffer.writeu16(ENCODE_A, Index, Sextet0Char + buffer.readu8(ALPHABET_BYTES, Sextet1) * 256)
+local ENCODE_A = b_create(131072)
+local ENCODE_B = b_create(131072)
+do
+	for byte0=0,255 do
+		local sext0 = byte0 // 4
+		local sext0char = b_readu8(ALPHABET_BYTES, sext0)
+		local byte0low = byte0 % 4
+		for byte1=0,255 do
+			local sext1 = byte0low * 16 + (byte1 // 16)
+			local idx = (byte0 + byte1 * 256) * 2
+			b_writeu16(ENCODE_A, idx, sext0char + b_readu8(ALPHABET_BYTES, sext1) * 256)
 		end
 	end
-
-	for Byte1 = 0, 255 do
-		local Nibble = (Byte1 % 16) * 4
-		for Byte2 = 0, 255 do
-			local Sextet2 = Nibble + (Byte2 // 64)
-			local Sextet3 = Byte2 % 64
-			local Index = (Byte1 + Byte2 * 256) * 2
-			buffer.writeu16(ENCODE_B, Index, buffer.readu8(ALPHABET_BYTES, Sextet2) + buffer.readu8(ALPHABET_BYTES, Sextet3) * 256)
+	for byte1=0,255 do
+		local nib = (byte1 % 16) * 4
+		for byte2=0,255 do
+			local sext2 = nib + (byte2 // 64)
+			local sext3 = byte2 % 64
+			local idx = (byte1 + byte2 * 256) * 2
+			b_writeu16(ENCODE_B, idx, b_readu8(ALPHABET_BYTES, sext2) + b_readu8(ALPHABET_BYTES, sext3) * 256)
 		end
 	end
 end
 
-local DECODE_TET = buffer.create(256) do
-	for Index = 1, 64 do
-		buffer.writeu8(DECODE_TET, buffer.readu8(ALPHABET_BYTES, Index - 1), Index - 1)
+local DECODE_TET = b_create(256)
+do
+	for i=1,64 do
+		b_writeu8(DECODE_TET, b_readu8(ALPHABET_BYTES, i-1), i-1)
 	end
-
-	buffer.writeu8(DECODE_TET, PADDING_CHARACTER, 254)
+	b_writeu8(DECODE_TET, PADDING_CHARACTER, 254)
 end
 
-local DECODE_PAIR = buffer.create(131072) do
-	for Char0 = 0, 255 do
-		local Decoded0 = buffer.readu8(DECODE_TET, Char0)
-		for Char1 = 0, 255 do
-			local Decoded1 = buffer.readu8(DECODE_TET, Char1)
-			local Key = (Char0 + Char1 * 256) * 2
-			if Decoded0 < 64 and Decoded1 < 64 then
-				buffer.writeu16(DECODE_PAIR, Key, Decoded0 * 64 + Decoded1)
-			elseif Decoded0 == 254 or Decoded1 == 254 then
-				buffer.writeu16(DECODE_PAIR, Key, 254)
+local DECODE_PAIR = b_create(131072)
+do
+	for c0=0,255 do
+		local d0 = b_readu8(DECODE_TET, c0)
+		for c1=0,255 do
+			local d1 = b_readu8(DECODE_TET, c1)
+			local key = (c0 + c1 * 256) * 2
+			if d0 < 64 and d1 < 64 then
+				b_writeu16(DECODE_PAIR, key, d0 * 64 + d1)
+			elseif d0 == 254 or d1 == 254 then
+				b_writeu16(DECODE_PAIR, key, 254)
 			end
 		end
 	end
 end
 
-local PAIR_A_BYTE1_HIGH = buffer.create(4096)
-local PAIR_B_BYTE1_LOW = buffer.create(4096)
-
-local PAIR_A_BYTE0, PAIR_B_BYTE2 = buffer.create(4096), buffer.create(4096) do
-	for PairA = 0, 4095 do
-		local Sextet0 = PairA // 64
-		local Sextet1 = PairA % 64
-		buffer.writeu8(PAIR_A_BYTE0, PairA, Sextet0 * 4 + (Sextet1 // 16))
-		buffer.writeu8(PAIR_A_BYTE1_HIGH, PairA, (Sextet1 % 16) * 16)
+local PAIR_A_BYTE1_HIGH = b_create(4096)
+local PAIR_B_BYTE1_LOW = b_create(4096)
+local PAIR_A_BYTE0 = b_create(4096)
+local PAIR_B_BYTE2 = b_create(4096)
+do
+	for p=0,4095 do
+		local s0 = p // 64
+		local s1 = p % 64
+		b_writeu8(PAIR_A_BYTE0, p, s0 * 4 + (s1 // 16))
+		b_writeu8(PAIR_A_BYTE1_HIGH, p, (s1 % 16) * 16)
 	end
-
-	for PairB = 0, 4095 do
-		local Sextet2 = PairB // 64
-		local Sextet3 = PairB % 64
-		buffer.writeu8(PAIR_B_BYTE1_LOW, PairB, Sextet2 // 4)
-		buffer.writeu8(PAIR_B_BYTE2, PairB, (Sextet2 % 4) * 64 + Sextet3)
+	for p=0,4095 do
+		local s2 = p // 64
+		local s3 = p % 64
+		b_writeu8(PAIR_B_BYTE1_LOW, p, s2 // 4)
+		b_writeu8(PAIR_B_BYTE2, p, (s2 % 4) * 64 + s3)
 	end
 end
 
 local function Encode(Input: buffer): buffer
-	local InputLength = buffer.len(Input)
-	if InputLength == 0 then
-		return buffer.create(0)
+	local L = b_len(Input)
+	if L == 0 then return b_create(0) end
+	local Out = b_create(((L + 2) // 3) * 4)
+	local i = 0
+	local o = 0
+	local FullEnd = L - (L % 3)
+	local UnrollStop = L - 13
+
+	local encA = ENCODE_A
+	local encB = ENCODE_B
+	local alpha = ALPHABET_BYTES
+
+	while i <= UnrollStop do
+		local w0 = b_readu32(Input, i)
+		local w1 = b_readu32(Input, i + 3)
+		local w2 = b_readu32(Input, i + 6)
+		local w3 = b_readu32(Input, i + 9)
+
+		local kA0 = w0 % 65536
+		local kB0 = (w0 // 256) % 65536
+		b_writeu32(Out, o, b_readu16(encA, kA0 * 2) + b_readu16(encB, kB0 * 2) * 0x10000)
+
+		local kA1 = w1 % 65536
+		local kB1 = (w1 // 256) % 65536
+		b_writeu32(Out, o + 4, b_readu16(encA, kA1 * 2) + b_readu16(encB, kB1 * 2) * 0x10000)
+
+		local kA2 = w2 % 65536
+		local kB2 = (w2 // 256) % 65536
+		b_writeu32(Out, o + 8, b_readu16(encA, kA2 * 2) + b_readu16(encB, kB2 * 2) * 0x10000)
+
+		local kA3 = w3 % 65536
+		local kB3 = (w3 // 256) % 65536
+		b_writeu32(Out, o + 12, b_readu16(encA, kA3 * 2) + b_readu16(encB, kB3 * 2) * 0x10000)
+
+		i += 12
+		o += 16
 	end
 
-	local Output = buffer.create(((InputLength + 2) // 3) * 4)
-	local InputIndex = 0
-	local OutputIndex = 0
-	local FullTripletEnd = InputLength - (InputLength % 3)
-	local UnrollStop = InputLength - 13
-
-	local EncodeA = ENCODE_A
-	local EncodeB = ENCODE_B
-	local AlphabetBytes = ALPHABET_BYTES
-
-	while InputIndex <= UnrollStop do
-		local Word0 = buffer.readu32(Input, InputIndex)
-		local Word1 = buffer.readu32(Input, InputIndex + 3)
-		local Word2 = buffer.readu32(Input, InputIndex + 6)
-		local Word3 = buffer.readu32(Input, InputIndex + 9)
-
-		local KeyA0 = Word0 % 65536
-		local KeyB0 = (Word0 // 256) % 65536
-		buffer.writeu32(Output, OutputIndex, buffer.readu16(EncodeA, KeyA0 * 2) + buffer.readu16(EncodeB, KeyB0 * 2) * 0x10000)
-
-		local KeyA1 = Word1 % 65536
-		local KeyB1 = (Word1 // 256) % 65536
-		buffer.writeu32(Output, OutputIndex + 4, buffer.readu16(EncodeA, KeyA1 * 2) + buffer.readu16(EncodeB, KeyB1 * 2) * 0x10000)
-
-		local KeyA2 = Word2 % 65536
-		local KeyB2 = (Word2 // 256) % 65536
-		buffer.writeu32(Output, OutputIndex + 8, buffer.readu16(EncodeA, KeyA2 * 2) + buffer.readu16(EncodeB, KeyB2 * 2) * 0x10000)
-
-		local KeyA3 = Word3 % 65536
-		local KeyB3 = (Word3 // 256) % 65536
-		buffer.writeu32(Output, OutputIndex + 12, buffer.readu16(EncodeA, KeyA3 * 2) + buffer.readu16(EncodeB, KeyB3 * 2) * 0x10000)
-
-		InputIndex += 12
-		OutputIndex += 16
+	while i < FullEnd do
+		local kA = b_readu16(Input, i)
+		local b2 = b_readu8(Input, i + 2)
+		local kB = (kA // 256) + b2 * 256
+		b_writeu32(Out, o, b_readu16(encA, kA * 2) + b_readu16(encB, kB * 2) * 0x10000)
+		i += 3
+		o += 4
 	end
 
-	while InputIndex < FullTripletEnd do
-		local KeyA = buffer.readu16(Input, InputIndex)
-		local Byte2 = buffer.readu8(Input, InputIndex + 2)
-		local KeyB = (KeyA // 256) + Byte2 * 256
-		buffer.writeu32(Output, OutputIndex, buffer.readu16(EncodeA, KeyA * 2) + buffer.readu16(EncodeB, KeyB * 2) * 0x10000)
-		InputIndex += 3
-		OutputIndex += 4
+	local rem = L - i
+	if rem == 1 then
+		local b0 = b_readu8(Input, i)
+		local s0 = b0 // 4
+		local s1 = (b0 % 4) * 16
+		local pair = b_readu8(alpha, s0) + b_readu8(alpha, s1) * 256
+		b_writeu16(Out, o, pair)
+		b_writeu8(Out, o + 2, PADDING_CHARACTER)
+		b_writeu8(Out, o + 3, PADDING_CHARACTER)
+	elseif rem == 2 then
+		local b0 = b_readu8(Input, i)
+		local b1 = b_readu8(Input, i + 1)
+		local kA = b0 + b1 * 256
+		b_writeu16(Out, o, b_readu16(encA, kA * 2))
+		local s2 = (b1 % 16) * 4
+		b_writeu8(Out, o + 2, b_readu8(alpha, s2))
+		b_writeu8(Out, o + 3, PADDING_CHARACTER)
 	end
 
-	local Remainder = InputLength - InputIndex
-	if Remainder == 1 then
-		local Byte0 = buffer.readu8(Input, InputIndex)
-		local Sextet0 = Byte0 // 4
-		local Sextet1 = (Byte0 % 4) * 16
-		local Pair = buffer.readu8(AlphabetBytes, Sextet0) + buffer.readu8(AlphabetBytes, Sextet1) * 256
-		buffer.writeu16(Output, OutputIndex, Pair)
-		buffer.writeu8(Output, OutputIndex + 2, PADDING_CHARACTER)
-		buffer.writeu8(Output, OutputIndex + 3, PADDING_CHARACTER)
-	elseif Remainder == 2 then
-		local Byte0 = buffer.readu8(Input, InputIndex)
-		local Byte1 = buffer.readu8(Input, InputIndex + 1)
-		local KeyA = Byte0 + Byte1 * 256
-		buffer.writeu16(Output, OutputIndex, buffer.readu16(EncodeA, KeyA * 2))
-		local Sextet2 = (Byte1 % 16) * 4
-		buffer.writeu8(Output, OutputIndex + 2, buffer.readu8(AlphabetBytes, Sextet2))
-		buffer.writeu8(Output, OutputIndex + 3, PADDING_CHARACTER)
-	end
-
-	return Output
+	return Out
 end
 
 local function Decode(Input: buffer): buffer
-	local InputLength = buffer.len(Input)
-	if InputLength == 0 then
-		return buffer.create(0)
-	end
+	local L = b_len(Input)
+	if L == 0 then return b_create(0) end
 
-	local Padding = 0
-	if buffer.readu8(Input, InputLength - 1) == PADDING_CHARACTER then
-		Padding = 1
-		if buffer.readu8(Input, InputLength - 2) == PADDING_CHARACTER then
-			Padding = 2
+	local padding = 0
+	if b_readu8(Input, L - 1) == PADDING_CHARACTER then
+		padding = 1
+		if b_readu8(Input, L - 2) == PADDING_CHARACTER then
+			padding = 2
 		end
 	end
 
-	local Output = buffer.create((InputLength // 4) * 3 - Padding)
-	local InputIndex = 0
-	local OutputIndex = 0
-	local BodyEnd = InputLength - 4
+	local Out = b_create((L // 4) * 3 - padding)
+	local i = 0
+	local o = 0
+	local BodyEnd = L - 4
 	local UnrollStop = BodyEnd - 8
 
-	local DecodePair = DECODE_PAIR
-	local Pair0 = PAIR_A_BYTE0
-	local PairAHigh = PAIR_A_BYTE1_HIGH
-	local PairBLow = PAIR_B_BYTE1_LOW
-	local Pair2 = PAIR_B_BYTE2
-	local Dtet = DECODE_TET
+	local decPair = DECODE_PAIR
+	local pA0 = PAIR_A_BYTE0
+	local pAHigh = PAIR_A_BYTE1_HIGH
+	local pBLow = PAIR_B_BYTE1_LOW
+	local p2 = PAIR_B_BYTE2
+	local dtet = DECODE_TET
 
-	while InputIndex <= UnrollStop do
-		local Word0 = buffer.readu32(Input, InputIndex)
-		local Word1 = buffer.readu32(Input, InputIndex + 4)
+	while i <= UnrollStop do
+		local w0 = b_readu32(Input, i)
+		local w1 = b_readu32(Input, i + 4)
 
-		local PairA0 = buffer.readu16(DecodePair, (Word0 % 65536) * 2)
-		local PairB0 = buffer.readu16(DecodePair, (Word0 // 65536) * 2)
-		buffer.writeu8(Output, OutputIndex, buffer.readu8(Pair0, PairA0))
-		buffer.writeu8(Output, OutputIndex + 1, buffer.readu8(PairAHigh, PairA0) + buffer.readu8(PairBLow, PairB0))
-		buffer.writeu8(Output, OutputIndex + 2, buffer.readu8(Pair2, PairB0))
+		local pa0 = b_readu16(decPair, (w0 % 65536) * 2)
+		local pb0 = b_readu16(decPair, (w0 // 65536) * 2)
+		b_writeu8(Out, o, b_readu8(pA0, pa0))
+		b_writeu8(Out, o + 1, b_readu8(pAHigh, pa0) + b_readu8(pBLow, pb0))
+		b_writeu8(Out, o + 2, b_readu8(p2, pb0))
 
-		local PairA1 = buffer.readu16(DecodePair, (Word1 % 65536) * 2)
-		local PairB1 = buffer.readu16(DecodePair, (Word1 // 65536) * 2)
-		buffer.writeu8(Output, OutputIndex + 3, buffer.readu8(Pair0, PairA1))
-		buffer.writeu8(Output, OutputIndex + 4, buffer.readu8(PairAHigh, PairA1) + buffer.readu8(PairBLow, PairB1))
-		buffer.writeu8(Output, OutputIndex + 5, buffer.readu8(Pair2, PairB1))
+		local pa1 = b_readu16(decPair, (w1 % 65536) * 2)
+		local pb1 = b_readu16(decPair, (w1 // 65536) * 2)
+		b_writeu8(Out, o + 3, b_readu8(pA0, pa1))
+		b_writeu8(Out, o + 4, b_readu8(pAHigh, pa1) + b_readu8(pBLow, pb1))
+		b_writeu8(Out, o + 5, b_readu8(p2, pb1))
 
-		InputIndex += 8
-		OutputIndex += 6
+		i += 8
+		o += 6
 	end
 
-	while InputIndex <= BodyEnd - 4 do
-		local Word = buffer.readu32(Input, InputIndex)
-		local PairA = buffer.readu16(DecodePair, (Word % 65536) * 2)
-		local PairB = buffer.readu16(DecodePair, (Word // 65536) * 2)
-		buffer.writeu8(Output, OutputIndex, buffer.readu8(Pair0, PairA))
-		buffer.writeu8(Output, OutputIndex + 1, buffer.readu8(PairAHigh, PairA) + buffer.readu8(PairBLow, PairB))
-		buffer.writeu8(Output, OutputIndex + 2, buffer.readu8(Pair2, PairB))
-		InputIndex += 4
-		OutputIndex += 3
+	while i <= BodyEnd - 4 do
+		local w = b_readu32(Input, i)
+		local pa = b_readu16(decPair, (w % 65536) * 2)
+		local pb = b_readu16(decPair, (w // 65536) * 2)
+		b_writeu8(Out, o, b_readu8(pA0, pa))
+		b_writeu8(Out, o + 1, b_readu8(pAHigh, pa) + b_readu8(pBLow, pb))
+		b_writeu8(Out, o + 2, b_readu8(p2, pb))
+		i += 4
+		o += 3
 	end
 
 	do
-		local Char0 = buffer.readu8(Input, InputIndex)
-		local Char1 = buffer.readu8(Input, InputIndex + 1)
-		local Char2 = buffer.readu8(Input, InputIndex + 2)
-		local Char3 = buffer.readu8(Input, InputIndex + 3)
-		local Decoded0 = buffer.readu8(Dtet, Char0)
-		local Decoded1 = buffer.readu8(Dtet, Char1)
+		local c0 = b_readu8(Input, i)
+		local c1 = b_readu8(Input, i + 1)
+		local c2 = b_readu8(Input, i + 2)
+		local c3 = b_readu8(Input, i + 3)
+		local d0 = b_readu8(dtet, c0)
+		local d1 = b_readu8(dtet, c1)
 
-		if Char2 == PADDING_CHARACTER then
-			local PairA = Decoded0 * 64 + Decoded1
-			buffer.writeu8(Output, OutputIndex, buffer.readu8(Pair0, PairA))
-		elseif Char3 == PADDING_CHARACTER then
-			local Decoded2 = buffer.readu8(Dtet, Char2)
-			local PairA = Decoded0 * 64 + Decoded1
-			local PairB = Decoded2 * 64
-			buffer.writeu8(Output, OutputIndex, buffer.readu8(Pair0, PairA))
-			buffer.writeu8(Output, OutputIndex + 1, buffer.readu8(PairAHigh, PairA) + (PairB // 256))
+		if c2 == PADDING_CHARACTER then
+			local pa = d0 * 64 + d1
+			b_writeu8(Out, o, b_readu8(pA0, pa))
+		elseif c3 == PADDING_CHARACTER then
+			local d2 = b_readu8(dtet, c2)
+			local pa = d0 * 64 + d1
+			local pb = d2 * 64
+			b_writeu8(Out, o, b_readu8(pA0, pa))
+			b_writeu8(Out, o + 1, b_readu8(pAHigh, pa) + (pb // 256))
 		else
-			local Decoded2 = buffer.readu8(Dtet, Char2)
-			local Decoded3 = buffer.readu8(Dtet, Char3)
-			local PairA = Decoded0 * 64 + Decoded1
-			local PairB = Decoded2 * 64 + Decoded3
-			buffer.writeu8(Output, OutputIndex, buffer.readu8(Pair0, PairA))
-			buffer.writeu8(Output, OutputIndex + 1, buffer.readu8(PairAHigh, PairA) + buffer.readu8(PairBLow, PairB))
-			buffer.writeu8(Output, OutputIndex + 2, buffer.readu8(Pair2, PairB))
+			local d2 = b_readu8(dtet, c2)
+			local d3 = b_readu8(dtet, c3)
+			local pa = d0 * 64 + d1
+			local pb = d2 * 64 + d3
+			b_writeu8(Out, o, b_readu8(pA0, pa))
+			b_writeu8(Out, o + 1, b_readu8(pAHigh, pa) + b_readu8(pBLow, pb))
+			b_writeu8(Out, o + 2, b_readu8(p2, pb))
 		end
 	end
 
-	return Output
+	return Out
 end
 
 return {
